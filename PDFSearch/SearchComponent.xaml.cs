@@ -18,6 +18,7 @@ using iTextSharp;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
 using iTextSharp.text.pdf.parser;
+using System.Diagnostics;
 
 namespace PDFSearch
 {
@@ -41,8 +42,7 @@ namespace PDFSearch
             SearchContent.Clear();
             DataContext = new Search();
 
-            StringBuilder sb = new StringBuilder();
-
+            
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
                 openFileDialog.InitialDirectory = "c:\\";
@@ -58,20 +58,23 @@ namespace PDFSearch
                     {
                         //https://stackoverflow.com/questions/2550796/reading-pdf-content-with-itextsharp-dll-in-vb-net-or-c-sharp
                         PdfReader reader = new PdfReader(file);
+                        StringBuilder combinedText = new StringBuilder();
                         for (int page = 1; page <= reader.NumberOfPages; page++)
                         {
                             ITextExtractionStrategy s = new SimpleTextExtractionStrategy();
                             string currentText = PdfTextExtractor.GetTextFromPage(reader, page, s);
 
                             currentText = Encoding.UTF8.GetString(ASCIIEncoding.Convert(Encoding.Default, Encoding.UTF8, Encoding.Default.GetBytes(currentText)));
-                            // sb.Append(currentText);
-                            SearchContent.Add(file, currentText);
                             
+                            //this is in a loop and wheeler_ethan has 2 pages....
+                            combinedText.Append(currentText);
                         }
+                        SearchContent.Add(file, combinedText.ToString().ToLower());
                         reader.Close();
                     }
 
                 }
+                
                 fileNameLabel.Content = openFileDialog.FileName;//not really accurate if more than 1 pdf file but ok for proving it loaded
                 openFileDialog.Dispose();
             }
@@ -128,6 +131,8 @@ namespace PDFSearch
 
         private void SearchClickHandler(object sender, RoutedEventArgs e)
         {
+            resultsListBox.Items.Clear();
+
             string searchTerms = SearchTermsBox.Text;
             //SearchContent from above will be searched for the searchTerms
 
@@ -144,20 +149,56 @@ namespace PDFSearch
             List<string> displayPdfs = new List<string>();
             foreach (KeyValuePair<string, string> kvp in SearchContent)
             {
-                foreach(var word in termsArray)
+                bool add = false;
+                foreach (var word in termsArray)
                 {
-                    if (kvp.Value.Contains(word))
+                    
+                    if (kvp.Value.Contains(word.ToLower()))
                     {
-                        displayPdfs.Add(kvp.Key);
+                        add = true;
+                        break;
                     }
+                    
                 }
+                if (add)
+                    displayPdfs.Add(kvp.Key);
             }
             foreach (var v in displayPdfs)
-                resultsListBox.Items.Add(v);
+            {
+                var newButton = new System.Windows.Controls.Button();
+                newButton.Content = v;
+                newButton.MouseDoubleClick += NewButton_DoubleClick;
+                resultsListBox.Items.Add(newButton);
+            }
                 
-           
+                //resultsListBox.Items.Add(v);
+                
 
-            
+        }
+
+        private void NewButton_DoubleClick(object sender, RoutedEventArgs e)
+        {
+            string filePath = sender.ToString().Replace("System.Windows.Controls.Button:", "").Trim();
+            //https://www.codeproject.com/Questions/852563/How-to-open-file-explorer-at-given-location-in-csh
+            /* if (Directory.Exists(filePath))
+             {
+                 ProcessStartInfo startInfo = new ProcessStartInfo
+                 {
+                     Arguments = filePath,
+                     FileName = "explorer.exe" //make else statements or something to try chrome.exe, acrobat reader, internet explorer, safrari, etc
+                 };
+
+                 Process.Start(startInfo);
+             }
+             else
+                 System.Windows.MessageBox.Show(string.Format("{0} Directory does not exist!", filePath));*/
+            ProcessStartInfo startInfo = new ProcessStartInfo
+            {
+                Arguments = filePath,
+                FileName = "explorer.exe" 
+            };
+
+            Process.Start(startInfo);
 
         }
 
