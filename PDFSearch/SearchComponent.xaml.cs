@@ -33,14 +33,14 @@ namespace PDFSearch
 
         }
 
-        //private string SearchContent = "";
-        //private List<string> SearchContent = new List<string>();
+        
         private Dictionary<string, string> SearchContent = new Dictionary<string, string>();
 
         private void UploadClickHandler(object sender, RoutedEventArgs e)
         {
             SearchContent.Clear();
-            DataContext = new Search();
+            uploadListBox.Items.Clear();
+            //DataContext = new Search();
 
             
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
@@ -66,28 +66,22 @@ namespace PDFSearch
 
                             currentText = Encoding.UTF8.GetString(ASCIIEncoding.Convert(Encoding.Default, Encoding.UTF8, Encoding.Default.GetBytes(currentText)));
                             
-                            //this is in a loop and wheeler_ethan has 2 pages....
+                            //this is in a loop and wheeler_ethan.pdf has 2 pages....
                             combinedText.Append(currentText);
                         }
                         SearchContent.Add(file, combinedText.ToString().ToLower());
+                        uploadListBox.Items.Add(System.IO.Path.GetFileNameWithoutExtension(file)); //file.ToString()
                         reader.Close();
                     }
 
                 }
+
                 
-                fileNameLabel.Content = openFileDialog.FileName;//not really accurate if more than 1 pdf file but ok for proving it loaded
+               // fileNameLabel.Content = openFileDialog.FileName;//not really accurate if more than 1 pdf file but ok for proving it loaded
                 openFileDialog.Dispose();
             }
 
-           // SearchContent = sb.ToString();
-
-
-
-
-
-
-
-            //resultsListBox.Items.Add(SearchContent);
+           
 
             //below is more for text documents
 
@@ -134,17 +128,10 @@ namespace PDFSearch
             resultsListBox.Items.Clear();
 
             string searchTerms = SearchTermsBox.Text;
-            //SearchContent from above will be searched for the searchTerms
-
-            //algorithm is like index.cshtml.cs but try to do .Split(" ") and see if any term is in the SearchContent. if so...
+            
 
             var termsArray = searchTerms.Split(' ');
-            /*List<string> matches = new List<string>();
-            foreach(var word in termsArray)
-            {
-                if (SearchContent.Contains(word))
-                    matches.Add(word);
-            }*/
+           
 
             List<string> displayPdfs = new List<string>();
             foreach (KeyValuePair<string, string> kvp in SearchContent)
@@ -166,39 +153,40 @@ namespace PDFSearch
             foreach (var v in displayPdfs)
             {
                 var newButton = new System.Windows.Controls.Button();
-                newButton.Content = v;
+                newButton.Content = System.IO.Path.GetFileNameWithoutExtension(v);
+                newButton.Tag = v;
+                newButton.IsDefault = true;
                 newButton.MouseDoubleClick += NewButton_DoubleClick;
+                
                 resultsListBox.Items.Add(newButton);
             }
                 
-                //resultsListBox.Items.Add(v);
+                
                 
 
         }
 
         private void NewButton_DoubleClick(object sender, RoutedEventArgs e)
         {
-            string filePath = sender.ToString().Replace("System.Windows.Controls.Button:", "").Trim();
+            var buttonObj = sender as System.Windows.Controls.Button;
+            string filePath = buttonObj.Tag.ToString();
+            
             //https://www.codeproject.com/Questions/852563/How-to-open-file-explorer-at-given-location-in-csh
-            /* if (Directory.Exists(filePath))
+             try
              {
                  ProcessStartInfo startInfo = new ProcessStartInfo
                  {
                      Arguments = filePath,
-                     FileName = "explorer.exe" //make else statements or something to try chrome.exe, acrobat reader, internet explorer, safrari, etc
+                     FileName = "explorer.exe"
                  };
 
                  Process.Start(startInfo);
              }
-             else
-                 System.Windows.MessageBox.Show(string.Format("{0} Directory does not exist!", filePath));*/
-            ProcessStartInfo startInfo = new ProcessStartInfo
-            {
-                Arguments = filePath,
-                FileName = "explorer.exe" 
-            };
+             catch (Exception ex)
+             {
+                 System.Windows.MessageBox.Show(ex.Message + ": " + filePath);
+             }
 
-            Process.Start(startInfo);
 
         }
 

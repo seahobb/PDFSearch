@@ -23,6 +23,7 @@ namespace PDFSearch
         public MainWindow()
         {
             InitializeComponent();
+            ResizeMode = ResizeMode.NoResize;
         }
     }
 }
